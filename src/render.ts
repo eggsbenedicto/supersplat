@@ -10,8 +10,8 @@ import { Scene } from './scene';
 import { injectSphericalMetadata } from './spherical-metadata';
 import { Splat } from './splat';
 import { i18n } from './ui/localization';
-import { videoTimelineSamples } from './video-sampling';
 import { buildVideoEncoderConfig, getVideoCodecType, VideoSettings } from './video-config';
+import { videoTimelineSamples } from './video-sampling';
 
 const nullClr = new Color(0, 0, 0, 0);
 
