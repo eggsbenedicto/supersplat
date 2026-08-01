@@ -309,6 +309,98 @@ class Ticks extends Container {
     }
 }
 
+/** Dedicated frame scrubber using the original timeline's pointer interaction. */
+class TimelineScrubber extends Container {
+    constructor(events: Events, args = {}) {
+        super({ ...args, id: 'timeline-scrubber' });
+
+        const label = document.createElement('div');
+        label.className = 'timeline-scrubber-label';
+        label.textContent = i18n.t('timeline.targets');
+
+        const workArea = document.createElement('div');
+        workArea.className = 'timeline-scrubber-area';
+        this.dom.append(label, workArea);
+
+        let frameFromOffset = (_offset: number) => 0;
+        let moveCursor = (_frame: number) => {};
+
+        const rebuild = () => {
+            workArea.innerHTML = '';
+
+            const frames = events.invoke('timeline.frames') as number;
+            const frame = events.invoke('timeline.frame') as number;
+            const padding = 20;
+            const width = Math.max(1, workArea.getBoundingClientRect().width - padding * 2);
+            const offsetFromFrame = (value: number) => padding + Math.floor(value / Math.max(1, frames - 1) * width);
+
+            frameFromOffset = (offset: number) => Math.max(0, Math.min(
+                frames - 1,
+                Math.floor((offset - padding) / width * Math.max(1, frames - 1))
+            ));
+
+            const minStep = Math.max(1, frames / Math.max(1, Math.floor(width / 50)));
+            const magnitude = 10 ** Math.floor(Math.log10(minStep));
+            const labelStep = [1, 2, 5, 10]
+            .map(value => value * magnitude)
+            .find(value => value >= minStep) ?? 10 * magnitude;
+            const tickStep = labelStep === 1 ? 0 : labelStep / (labelStep % 5 === 0 ? 5 : 2);
+
+            for (let value = 0; value < frames; value += labelStep) {
+                const frameLabel = document.createElement('div');
+                frameLabel.className = 'timeline-scrubber-frame';
+                frameLabel.style.left = `${offsetFromFrame(value)}px`;
+                frameLabel.textContent = `${value}`;
+                workArea.appendChild(frameLabel);
+            }
+
+            if (tickStep > 0) {
+                for (let value = tickStep; value < frames; value += tickStep) {
+                    if (value % labelStep !== 0) {
+                        const tick = document.createElement('div');
+                        tick.className = 'timeline-scrubber-tick';
+                        tick.style.left = `${offsetFromFrame(value)}px`;
+                        workArea.appendChild(tick);
+                    }
+                }
+            }
+
+            const cursor = document.createElement('div');
+            cursor.className = 'timeline-scrubber-cursor';
+            workArea.appendChild(cursor);
+            moveCursor = (value: number) => {
+                cursor.style.left = `${offsetFromFrame(value)}px`;
+                cursor.textContent = `${value}`;
+            };
+            moveCursor(frame);
+        };
+
+        let scrubbing = false;
+        const stopScrubbing = (event: PointerEvent) => {
+            if (!scrubbing || !event.isPrimary) return;
+            scrubbing = false;
+            if (workArea.hasPointerCapture(event.pointerId)) workArea.releasePointerCapture(event.pointerId);
+        };
+
+        workArea.addEventListener('pointerdown', (event: PointerEvent) => {
+            if (scrubbing || !event.isPrimary) return;
+            scrubbing = true;
+            workArea.setPointerCapture(event.pointerId);
+            events.fire('timeline.setFrame', frameFromOffset(event.offsetX));
+        });
+        workArea.addEventListener('pointermove', (event: PointerEvent) => {
+            if (scrubbing) events.fire('timeline.setFrame', frameFromOffset(event.offsetX));
+        });
+        workArea.addEventListener('pointerup', stopScrubbing);
+        workArea.addEventListener('pointercancel', stopScrubbing);
+
+        new ResizeObserver(rebuild).observe(workArea);
+        events.on('timeline.frames', rebuild);
+        events.on('timeline.frame', (value: number) => moveCursor(value));
+        rebuild();
+    }
+}
+
 /** Multi-row timeline sharing one ruler and playhead across every target. */
 class TimelineStack extends Container {
     constructor(events: Events, tooltips: Tooltips, args = {}) {
@@ -336,43 +428,6 @@ class TimelineStack extends Container {
                 const x = clientX - area.getBoundingClientRect().left;
                 return Math.max(0, Math.min(frames - 1, Math.floor((x - padding) / width * Math.max(1, frames - 1))));
             };
-
-            const ruler = document.createElement('div');
-            ruler.className = 'timeline-ruler';
-            const rulerLabel = document.createElement('div');
-            rulerLabel.className = 'timeline-target-label';
-            rulerLabel.textContent = i18n.t('timeline.targets');
-            const rulerArea = document.createElement('div');
-            rulerArea.className = 'timeline-row-area';
-            ruler.append(rulerLabel, rulerArea);
-            body.appendChild(ruler);
-
-            const minStep = Math.max(1, frames / Math.max(1, Math.floor(width / 50)));
-            const magnitude = 10 ** Math.floor(Math.log10(minStep));
-            const step = [1, 2, 5, 10].map(value => value * magnitude).find(value => value >= minStep) ?? 10 * magnitude;
-            for (let frame = 0; frame < frames; frame += step) {
-                const label = document.createElement('div');
-                label.className = 'timeline-ruler-label';
-                label.style.left = `${offsetFromFrame(frame)}px`;
-                label.textContent = `${frame}`;
-                rulerArea.appendChild(label);
-            }
-
-            let scrubbing = false;
-            rulerArea.addEventListener('pointerdown', (event: PointerEvent) => {
-                if (!event.isPrimary) return;
-                scrubbing = true;
-                rulerArea.setPointerCapture(event.pointerId);
-                events.fire('timeline.setFrame', frameFromX(event.clientX, rulerArea));
-            });
-            rulerArea.addEventListener('pointermove', (event: PointerEvent) => {
-                if (scrubbing) events.fire('timeline.setFrame', frameFromX(event.clientX, rulerArea));
-            });
-            rulerArea.addEventListener('pointerup', (event: PointerEvent) => {
-                if (!scrubbing || !event.isPrimary) return;
-                scrubbing = false;
-                rulerArea.releasePointerCapture(event.pointerId);
-            });
 
             const cursor = document.createElement('div');
             cursor.className = 'timeline-playhead';
@@ -631,10 +686,12 @@ class TimelinePanel extends Container {
         controlsWrap.append(buttonControls);
         controlsWrap.append(spacerR);
 
-        const ticks = new TimelineStack(events, tooltips);
+        const scrubber = new TimelineScrubber(events);
+        const timeline = new TimelineStack(events, tooltips);
 
         this.append(controlsWrap);
-        this.append(ticks);
+        this.append(scrubber);
+        this.append(timeline);
 
         // ui handlers
 

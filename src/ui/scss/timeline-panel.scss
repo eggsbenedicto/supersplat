@@ -191,6 +191,59 @@
         }
     }
 
+    > #timeline-scrubber {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        height: 38px;
+        flex: 0 0 38px;
+        background-color: $bcg-darkest;
+
+        > .timeline-scrubber-label {
+            overflow: hidden;
+            padding: 14px 8px 4px 11px;
+            color: $clr-default;
+            font-size: 11px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        > .timeline-scrubber-area {
+            position: relative;
+            min-width: 0;
+            cursor: ew-resize;
+            touch-action: none;
+
+            > .timeline-scrubber-tick,
+            > .timeline-scrubber-frame,
+            > .timeline-scrubber-cursor {
+                position: absolute;
+                bottom: 1px;
+                transform: translateX(-50%);
+                pointer-events: none;
+            }
+
+            > .timeline-scrubber-tick {
+                width: 1px;
+                height: 5px;
+                background-color: $clr-disabled;
+            }
+
+            > .timeline-scrubber-frame {
+                padding: 2px;
+                color: $clr-default;
+                font-size: 12px;
+            }
+
+            > .timeline-scrubber-cursor {
+                padding: 2px 6px;
+                border-radius: 4px;
+                color: $clr-active;
+                background-color: $clr-hilight;
+                font-size: 12px;
+            }
+        }
+    }
+
     > #timeline-stack {
         min-height: 76px;
         max-height: 190px;
@@ -202,18 +255,10 @@
             position: relative;
             min-width: 100%;
 
-            .timeline-ruler,
             .timeline-target-row {
                 display: grid;
                 grid-template-columns: 120px 1fr;
                 min-height: 26px;
-            }
-
-            .timeline-ruler {
-                position: sticky;
-                top: 0;
-                z-index: 4;
-                background-color: $bcg-primary;
             }
 
             .timeline-target-row {
@@ -257,15 +302,6 @@
             .timeline-row-area {
                 position: relative;
                 min-width: 0;
-            }
-
-            .timeline-ruler-label {
-                position: absolute;
-                bottom: 4px;
-                transform: translateX(-50%);
-                color: $clr-default;
-                font-size: 11px;
-                pointer-events: none;
             }
 
             .timeline-playhead {
