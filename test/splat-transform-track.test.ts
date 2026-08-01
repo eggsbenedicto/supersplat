@@ -88,4 +88,21 @@ describe('SplatTransformTrack', () => {
         // Segment length is (20 - 12) + 4 = 12 frames; frame 18 is halfway.
         expect(target.position.x).toBe(8);
     });
+
+    test('moving and copying onto occupied frames replace only that frame and keep keys sorted', () => {
+        const { target, track } = createTrack();
+        target.position.x = 2;
+        track.addKey(2);
+        target.position.x = 8;
+        track.addKey(8);
+        target.position.x = 5;
+        track.addKey(5);
+
+        expect(track.copyKey(2, 5)).toBe(true);
+        expect(track.moveKey(8, 2)).toBe(true);
+        expect(track.keys).toEqual([2, 5]);
+
+        track.evaluate(0);
+        expect(target.position.x).toBe(8);
+    });
 });
