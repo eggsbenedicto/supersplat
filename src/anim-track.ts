@@ -53,6 +53,9 @@ interface AnimTrack {
 
     /** Rebuild any cached evaluation data after Global Timeline settings change. */
     timelineSettingsChanged(): void;
+
+    /** Release target-specific listeners or resources when the target is removed. */
+    dispose?(): void;
 }
 
 export { AnimTrack };
