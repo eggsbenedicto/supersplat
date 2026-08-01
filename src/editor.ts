@@ -1,8 +1,8 @@
 import { MemoryFileSystem } from '@playcanvas/splat-transform';
 import { Color, Mat4, path, Quat, Texture, Vec3, Vec4 } from 'playcanvas';
 
-import { EditHistory } from './edit-history';
 import { registerCameraPreviewEvents } from './camera-preview';
+import { EditHistory } from './edit-history';
 import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MultiOp, AddSplatOp, SetLocalFrameOp } from './edit-ops';
 import { Element, ElementType } from './element';
 import { Events } from './events';
