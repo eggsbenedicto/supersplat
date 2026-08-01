@@ -42,6 +42,48 @@ const registerTrackManagerEvents = (events: Events) => {
     events.function('track.target', (id: string) => findTarget(id));
     events.function('track.keys', () => activeTarget?.track.keys ?? []);
 
+    events.function('docSerialize.animations', () => ({
+        version: 1,
+        tracks: targets.map((target) => {
+            if (target.kind === 'camera') {
+                return {
+                    target: { type: 'camera' },
+                    type: 'cameraPose',
+                    keys: target.track.serialize()
+                };
+            }
+            const splatIndex = targets.filter(candidate => candidate.kind === 'splat').indexOf(target);
+            return {
+                target: { type: 'splat', index: splatIndex },
+                type: 'transform',
+                interpolation: { position: 'linear', rotation: 'slerp', scale: 'linear' },
+                keys: target.track.serialize()
+            };
+        })
+    }));
+
+    events.function('docDeserialize.animations', (animations: any) => {
+        if (animations?.version !== 1 || !Array.isArray(animations.tracks)) return false;
+        const splatTargets = targets.filter(target => target.kind === 'splat');
+        let loadedCamera = false;
+        animations.tracks.forEach((data: any) => {
+            let target: TimelineTarget;
+            if (data?.target?.type === 'camera' && data.type === 'cameraPose') {
+                target = targets[0];
+                loadedCamera = true;
+            } else if (data?.target?.type === 'splat' && data.type === 'transform') {
+                target = splatTargets[data.target.index];
+            }
+            if (!target) {
+                console.warn(`ignoring unknown animation track '${data?.type ?? 'missing'}'`);
+                return;
+            }
+            target.track.deserialize(data.keys);
+        });
+        evaluateAll(events.invoke('timeline.frame'));
+        return loadedCamera;
+    });
+
     events.on('track.setActive', (id: string) => {
         setActiveTarget(findTarget(id));
     });

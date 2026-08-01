@@ -54,6 +54,12 @@ interface AnimTrack {
     /** Rebuild any cached evaluation data after Global Timeline settings change. */
     timelineSettingsChanged(): void;
 
+    /** Serialize only this track's type-specific key data. */
+    serialize(): unknown;
+
+    /** Replace this track's keys from type-specific serialized key data. */
+    deserialize(data: unknown): void;
+
     /** Release target-specific listeners or resources when the target is removed. */
     dispose?(): void;
 }

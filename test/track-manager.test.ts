@@ -16,7 +16,9 @@ const fakeTrack = (): AnimTrack => ({
     snapshot: () => [],
     restore: () => {},
     evaluate: vi.fn(),
-    timelineSettingsChanged: vi.fn()
+    timelineSettingsChanged: vi.fn(),
+    serialize: () => [],
+    deserialize: () => {}
 });
 
 const fakeSplat = (uid: number, name: string) => {

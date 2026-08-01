@@ -16,8 +16,8 @@ type Pose = {
  * Camera animation track that manages camera keyframes and interpolation.
  * Implements AnimTrack interface so it can be used with the timeline system.
  *
- * Fully self-contained: subscribes to timeline events internally for
- * evaluation and spline rebuilding.
+ * Evaluation and timeline-setting dispatch are centralized in the target
+ * registry so Camera follows the same lifecycle as every other target.
  */
 class CameraAnimTrack implements AnimTrack {
     private poses: Pose[] = [];
@@ -26,28 +26,6 @@ class CameraAnimTrack implements AnimTrack {
 
     constructor(events: Events) {
         this.events = events;
-
-        // Evaluate on timeline playback and scrub
-        events.on('timeline.time', (time: number) => {
-            this.evaluate(time);
-        });
-
-        events.on('timeline.frame', (frame: number) => {
-            this.evaluate(frame);
-        });
-
-        // Rebuild spline when timeline parameters change
-        events.on('timeline.frames', () => {
-            this.rebuildSpline();
-        });
-
-        events.on('timeline.smoothness', () => {
-            this.rebuildSpline();
-        });
-
-        events.on('timeline.loop', () => {
-            this.rebuildSpline();
-        });
 
         // Clear track when scene is cleared
         events.on('scene.clear', () => {
@@ -76,11 +54,11 @@ class CameraAnimTrack implements AnimTrack {
         if (existingIndex === -1) {
             this.poses.push(newPose);
             this.rebuildSpline();
-            this.events.fire('track.keyAdded', frame);
+            this.events.fire('track.keyAdded', 'camera', frame);
         } else {
             this.poses[existingIndex] = newPose;
             this.rebuildSpline();
-            this.events.fire('track.keyUpdated', frame);
+            this.events.fire('track.keyUpdated', 'camera', frame);
         }
         return true;
     }
@@ -90,7 +68,7 @@ class CameraAnimTrack implements AnimTrack {
         if (index === -1) return false;
         this.poses.splice(index, 1);
         this.rebuildSpline();
-        this.events.fire('track.keyRemoved', frame);
+        this.events.fire('track.keyRemoved', 'camera', frame);
         return true;
     }
 
@@ -110,7 +88,7 @@ class CameraAnimTrack implements AnimTrack {
         const movedIndex = this.poses.findIndex(p => p.frame === fromFrame);
         this.poses[movedIndex].frame = toFrame;
         this.rebuildSpline();
-        this.events.fire('track.keyMoved', fromFrame, toFrame);
+        this.events.fire('track.keyMoved', 'camera', fromFrame, toFrame);
         return true;
     }
 
@@ -135,7 +113,7 @@ class CameraAnimTrack implements AnimTrack {
         });
 
         this.rebuildSpline();
-        this.events.fire('track.keyAdded', toFrame);
+        this.events.fire('track.keyAdded', 'camera', toFrame);
         return true;
     }
 
@@ -146,7 +124,7 @@ class CameraAnimTrack implements AnimTrack {
     clear(): void {
         this.poses.length = 0;
         this.onTimelineChange = null;
-        this.events.fire('track.keysCleared');
+        this.events.fire('track.keysCleared', 'camera');
     }
 
     snapshot(): Pose[] {
@@ -168,11 +146,37 @@ class CameraAnimTrack implements AnimTrack {
             fov: p.fov
         }));
         this.rebuildSpline();
-        this.events.fire('track.keysLoaded');
+        this.events.fire('track.keysLoaded', 'camera');
     }
 
     timelineSettingsChanged(): void {
         this.rebuildSpline();
+    }
+
+    serialize() {
+        return this.poses.map(pose => ({
+            name: pose.name,
+            frame: pose.frame,
+            position: pose.position.toArray(),
+            target: pose.target.toArray(),
+            fov: pose.fov
+        }));
+    }
+
+    deserialize(data: unknown): void {
+        const valid3 = (value: unknown) => Array.isArray(value) && value.length === 3 &&
+            value.every(component => typeof component === 'number' && Number.isFinite(component));
+        const poses = (Array.isArray(data) ? data : []).flatMap((value: any, index) => {
+            if (!Number.isFinite(value?.frame) || !valid3(value.position) || !valid3(value.target)) return [];
+            return [{
+                name: typeof value.name === 'string' ? value.name : `camera_${index}`,
+                frame: value.frame,
+                position: new Vec3(value.position),
+                target: new Vec3(value.target),
+                fov: Number.isFinite(value.fov) ? value.fov : this.events.invoke('camera.fov') ?? 60
+            }];
+        });
+        this.loadPoses(poses);
     }
 
     /**
@@ -189,11 +193,11 @@ class CameraAnimTrack implements AnimTrack {
         if (idx !== -1) {
             this.poses[idx] = pose;
             this.rebuildSpline();
-            this.events.fire('track.keyUpdated', pose.frame);
+            this.events.fire('track.keyUpdated', 'camera', pose.frame);
         } else {
             this.poses.push(pose);
             this.rebuildSpline();
-            this.events.fire('track.keyAdded', pose.frame);
+            this.events.fire('track.keyAdded', 'camera', pose.frame);
         }
     }
 
@@ -213,7 +217,7 @@ class CameraAnimTrack implements AnimTrack {
             this.poses.push(pose);
         });
         this.rebuildSpline();
-        this.events.fire('track.keysLoaded');
+        this.events.fire('track.keysLoaded', 'camera');
     }
 
     private rebuildSpline(): void {
