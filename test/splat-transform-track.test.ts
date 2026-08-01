@@ -51,4 +51,26 @@ describe('SplatTransformTrack', () => {
         expect(target.scale.toArray()).toEqual([2, 3, 4]);
         expect(target.rotation.length()).toBeCloseTo(1, 8);
     });
+
+    test('fractional evaluation linearly interpolates position and scale and slerps rotation on the shortest path', () => {
+        const { target, track } = createTrack();
+        target.rotation.setFromEulerAngles(0, 170, 0);
+        track.addKey(0);
+
+        target.position.set(10, 20, 30);
+        target.rotation.setFromEulerAngles(0, -170, 0);
+        // q and -q represent the same endpoint; deserialization/capture must
+        // not turn that sign choice into a long-path rotation.
+        target.rotation.mulScalar(-1);
+        target.scale.set(3, 5, 7);
+        track.addKey(10);
+
+        track.evaluate(5.5);
+
+        expect(target.position.toArray()).toEqual([5.5, 11, 16.5]);
+        expect(target.scale.toArray()).toEqual([2.1, 3.2, 4.3]);
+        expect(target.rotation.length()).toBeCloseTo(1, 8);
+        const forward = target.rotation.transformVector(Vec3.FORWARD);
+        expect(forward.z).toBeLessThan(-0.98);
+    });
 });
