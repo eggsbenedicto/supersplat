@@ -28,6 +28,10 @@ const cloneKey = (key: SplatTransformKey): SplatTransformKey => ({
 
 class SplatTransformTrack implements AnimTrack {
     private data: SplatTransformKey[] = [];
+    private resultPosition = new Vec3();
+    private resultRotation = new Quat();
+    private resultScale = new Vec3();
+    private slerpEnd = new Quat();
 
     constructor(
         readonly targetId: string,
@@ -89,16 +93,34 @@ class SplatTransformTrack implements AnimTrack {
         this.events.fire('track.keysLoaded', this.targetId);
     }
 
-    evaluate(_frame: number): void {
-        if (this.data.length !== 1) return;
-        const key = this.data[0];
+    evaluate(frame: number): void {
+        if (this.data.length === 0) return;
+
+        let position: Vec3;
+        let rotation: Quat;
+        let scale: Vec3;
+
+        if (this.data.length === 1) {
+            ({ position, rotation, scale } = this.data[0]);
+        } else {
+            const rightIndex = this.data.findIndex(key => key.frame >= frame);
+            const a = rightIndex <= 0 ? this.data[0] : this.data[rightIndex - 1];
+            const b = rightIndex === -1 ? this.data[this.data.length - 1] : this.data[rightIndex];
+            const t = a === b ? 0 : Math.max(0, Math.min(1, (frame - a.frame) / (b.frame - a.frame)));
+
+            position = this.resultPosition.lerp(a.position, b.position, t);
+            scale = this.resultScale.lerp(a.scale, b.scale, t);
+            const end = a.rotation.dot(b.rotation) < 0 ? this.slerpEnd.copy(b.rotation).mulScalar(-1) : b.rotation;
+            rotation = this.resultRotation.slerp(a.rotation, end, t).normalize();
+        }
+
         const entity = this.target.entity;
-        if (entity.getLocalPosition().equals(key.position) &&
-            entity.getLocalRotation().equals(key.rotation) &&
-            entity.getLocalScale().equals(key.scale)) {
+        if (entity.getLocalPosition().equals(position) &&
+            entity.getLocalRotation().equals(rotation) &&
+            entity.getLocalScale().equals(scale)) {
             return;
         }
-        this.target.move(key.position, key.rotation, key.scale);
+        this.target.move(position, rotation, scale);
     }
 
     timelineSettingsChanged(): void {}
