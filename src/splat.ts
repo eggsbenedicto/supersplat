@@ -49,6 +49,7 @@ class Splat extends Element {
     numSelected = 0;
     entity: Entity;
     changedCounter = 0;
+    transformRevision = 0;
     stateTexture: Texture;
     // encapsulates per-splat state mirror (cpu Uint8Array + gpu Texture).
     // all writes go through state.setBits/clearBits/toggleBits, then flush().
@@ -515,6 +516,7 @@ class Splat extends Element {
         }
 
         this.updateWorldBound();
+        this.transformRevision++;
 
         this.scene.events.fire('splat.moved', this);
     }

@@ -11,6 +11,7 @@ import { injectSphericalMetadata } from './spherical-metadata';
 import { Splat } from './splat';
 import { i18n } from './ui/localization';
 import { buildVideoEncoderConfig, getVideoCodecType, VideoSettings } from './video-config';
+import { videoTimelineSamples } from './video-sampling';
 
 const nullClr = new Color(0, 0, 0, 0);
 
@@ -355,6 +356,8 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
     events.function('render.video', (videoSettings: VideoSettings, fileStream: FileSystemWritableFileStream) => {
         const renderImpl = async () => {
             events.fire('progressStart', i18n.t('panel.render.render-video'), true);
+            const restoreFrame = events.invoke('timeline.frame') as number;
+            events.fire('camera.setRenderEvaluation', true);
 
             let cancelled = false;
             const cancelHandler = events.on('progressCancel', () => {
@@ -484,7 +487,10 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
 
                 // prepare the frame for rendering, returns the newly loaded splat if any
                 const prepareFrame = async (frameTime: number, skipSort = false): Promise<Splat | null> => {
-                    // Fire timeline.time for camera animation interpolation
+                    const allSplats = scene.getElementsByType(ElementType.splat) as Splat[];
+                    const revisions = new Map(allSplats.map(splat => [splat, splat.transformRevision]));
+
+                    // Camera and splats share this exact fractional evaluation.
                     events.fire('timeline.time', frameTime);
 
                     // Wait for PLY sequence to load the frame if present
@@ -498,20 +504,16 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                         return newSplat;
                     }
 
-                    // If a new PLY was loaded, sort and wait for completion
-                    if (newSplat) {
-                        await sortAndWait([newSplat]);
-                    } else {
-                        // No new PLY - sort existing splats if camera moved
-                        const pos = scene.camera.position;
-                        const forward = scene.camera.forward;
-                        if (!last_pos.equals(pos) || !last_forward.equals(forward)) {
-                            last_pos.copy(pos);
-                            last_forward.copy(forward);
-
-                            const splats = (scene.getElementsByType(ElementType.splat) as Splat[]).filter(splat => splat.visible);
-                            await sortAndWait(splats);
-                        }
+                    const visible = allSplats.filter(splat => splat.visible);
+                    const pos = scene.camera.position;
+                    const forward = scene.camera.forward;
+                    const cameraMoved = !last_pos.equals(pos) || !last_forward.equals(forward);
+                    const changed = cameraMoved ? visible : visible.filter(splat =>
+                        splat === newSplat || revisions.get(splat) !== splat.transformRevision);
+                    if (changed.length > 0) {
+                        last_pos.copy(pos);
+                        last_forward.copy(forward);
+                        await sortAndWait([...new Set(changed)]);
                     }
 
                     return newSplat;
@@ -581,8 +583,9 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                 };
 
                 const animFrameRate = events.invoke('timeline.frameRate');
+                const samples = videoTimelineSamples(startFrame, endFrame, animFrameRate, frameRate);
                 const duration = (endFrame - startFrame) / animFrameRate;
-                const totalFrames = Math.floor(duration * frameRate) + 1;
+                const totalFrames = samples.length;
 
                 // work objects for 360 capture
                 const camPos = new Vec3();
@@ -645,9 +648,12 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                     await encodeFrame(frameTime);
                 };
 
-                for (let frameTime = 0; frameTime <= duration; frameTime += 1.0 / frameRate) {
+                for (let outputFrame = 0; outputFrame < samples.length; outputFrame++) {
                     // check for cancellation
                     if (cancelled) break;
+
+                    const frameTime = outputFrame / frameRate;
+                    const timelineFrame = samples[outputFrame];
 
                     if (is360) {
                         // restore animated-pose evaluation before the timeline
@@ -656,12 +662,12 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                         scene.camera.fov = savedFov;
 
                         // prepare the frame (loads PLY if needed, updates camera)
-                        await prepareFrame(startFrame + frameTime * animFrameRate, true);
+                        await prepareFrame(timelineFrame, true);
 
                         await capture360(frameTime);
                     } else {
                         // prepare the frame (loads PLY if needed, updates camera, sorts)
-                        await prepareFrame(startFrame + frameTime * animFrameRate);
+                        await prepareFrame(timelineFrame);
 
                         // render a frame
                         scene.lockedRender = true;
@@ -773,7 +779,11 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                 scene.gizmoLayer.enabled = true;
                 scene.camera.clearPass.setClearColor(nullClr);
                 scene.lockedRenderMode = false;
-                scene.forceRender = true;       // camera likely moved, finish with normal render
+                events.fire('timeline.time', restoreFrame);
+                events.fire('timeline.setFrame', restoreFrame);
+                scene.camera.onUpdate(0);
+                events.fire('camera.setRenderEvaluation', false);
+                scene.forceRender = true;
 
                 events.fire('progressEnd');
             }
