@@ -125,6 +125,7 @@ class CameraAnimTrack implements AnimTrack {
         this.poses.length = 0;
         this.onTimelineChange = null;
         this.events.fire('track.keysCleared', 'camera');
+        this.events.fire('camera.timelineCleared');
     }
 
     snapshot(): Pose[] {
@@ -252,7 +253,7 @@ class CameraAnimTrack implements AnimTrack {
                 pose.position.set(result[0], result[1], result[2]);
                 pose.target.set(result[3], result[4], result[5]);
                 pose.fov = result[6];
-                this.events.fire('camera.setPose', pose, 0);
+                this.events.fire('camera.timelinePose', pose);
             };
         } else if (orderedPoses.length === 1) {
             // a single key can't form a spline; hold its pose at every frame
@@ -260,10 +261,11 @@ class CameraAnimTrack implements AnimTrack {
             const pose = { position: p.position.clone(), target: p.target.clone(), fov: p.fov };
 
             this.onTimelineChange = () => {
-                this.events.fire('camera.setPose', pose, 0);
+                this.events.fire('camera.timelinePose', pose);
             };
         } else {
             this.onTimelineChange = null;
+            this.events.fire('camera.timelineCleared');
         }
 
         // re-evaluate at the current frame so the camera updates immediately

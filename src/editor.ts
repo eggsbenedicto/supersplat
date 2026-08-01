@@ -2,6 +2,7 @@ import { MemoryFileSystem } from '@playcanvas/splat-transform';
 import { Color, Mat4, path, Quat, Texture, Vec3, Vec4 } from 'playcanvas';
 
 import { EditHistory } from './edit-history';
+import { registerCameraPreviewEvents } from './camera-preview';
 import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MultiOp, AddSplatOp, SetLocalFrameOp } from './edit-ops';
 import { Element, ElementType } from './element';
 import { Events } from './events';
@@ -22,6 +23,10 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
     const vec4 = new Vec4();
     const mat = new Mat4();
     const SH_C0 = 0.28209479177387814;
+
+    registerCameraPreviewEvents(events, (enabled) => {
+        scene.camera.controller.enabled = enabled;
+    });
 
     const decodeColorChannel = (value: number) => {
         return Math.min(1, Math.max(0, 0.5 + value * SH_C0));

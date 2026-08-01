@@ -13,6 +13,7 @@ const dist = (x0: number, y0: number, x1: number, y1: number) => Math.sqrt((x1 -
 class PointerController {
     update: (deltaTime: number) => void;
     destroy: () => void;
+    enabled = true;
 
     constructor(camera: Camera, target: HTMLElement) {
 
@@ -388,6 +389,7 @@ class PointerController {
         events.on('camera.modifier.slow', onModifierSlow);
 
         this.update = (deltaTime: number) => {
+            if (!this.enabled) return;
             if (camera.controlMode !== 'fly') return;
 
             // Fly mode: WASD for movement, Q/E for up/down - moves focal point
@@ -434,6 +436,10 @@ class PointerController {
 
         const wrap = (target: any, name: string, fn: any, options?: any) => {
             const callback = (event: any) => {
+                if (!this.enabled) {
+                    event.preventDefault?.();
+                    return;
+                }
                 camera.scene.events.fire('camera.controller', name);
                 fn(event);
             };
