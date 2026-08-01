@@ -79,6 +79,18 @@ To achieve fine grain control over the transform of the selected splat, you can 
 
 To set the origin of the currently active gizmo, double click anywhere in the 3D view.
 
+## Animating Cameras and Splats
+
+Open the Timeline panel from the status bar to see the Timeline Stack. Camera is the first row, followed by every splat in Scene Manager order. Click a row to make it the Active Timeline Target; selecting a splat in the Scene Manager activates the same row. Hidden splats remain in the stack as dimmed rows and can be selected without becoming visible.
+
+Use Add Key to capture the active target at the current frame. A Camera key captures the Edit View position, focal target and field of view. A splat key captures its complete local position, rotation and scale. Transforming a splat or navigating the Edit View does not create a key automatically.
+
+Drag a key horizontally to move it, Shift-drag to copy it, or Ctrl-click it to replace it with the target's current timeline state. Key operations, Previous Key and Next Key affect only the active row. All rows still evaluate together when playing or scrubbing the shared timeline.
+
+The pin button enables Render Camera Preview. This navigation-locked view follows the evaluated Camera exactly and matches offline rendering. Unpin it to return to the independent Edit View; splats continue animating while you navigate. Camera Smoothness applies only to Camera rows. Splat position and scale interpolate linearly, while rotation follows the shortest path.
+
+Saving a SuperSplat project preserves Camera and splat animation. Legacy Camera animation remains compatible with older project readers; splat animation requires a version that supports the Timeline Stack.
+
 ## Merging Splats
 
 It is possible to merge multiple .ply files together and output a single, combine .ply file. Simply load any number of .ply files into Scene Manager, perform whatever transformations and edits you require, and then save the result via the `Scene` > `Save` menu item.
