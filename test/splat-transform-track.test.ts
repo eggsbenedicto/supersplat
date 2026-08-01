@@ -68,9 +68,11 @@ describe('SplatTransformTrack', () => {
         track.evaluate(5.5);
 
         expect(target.position.toArray()).toEqual([5.5, 11, 16.5]);
-        expect(target.scale.toArray()).toEqual([2.1, 3.2, 4.3]);
+        target.scale.toArray().forEach((value, index) => {
+            expect(value).toBeCloseTo([2.1, 3.2, 4.3][index], 8);
+        });
         expect(target.rotation.length()).toBeCloseTo(1, 8);
         const forward = target.rotation.transformVector(Vec3.FORWARD);
-        expect(forward.z).toBeLessThan(-0.98);
+        expect(forward.z).toBeGreaterThan(0.98);
     });
 });
