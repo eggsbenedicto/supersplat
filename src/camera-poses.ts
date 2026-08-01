@@ -171,6 +171,10 @@ class CameraAnimTrack implements AnimTrack {
         this.events.fire('track.keysLoaded');
     }
 
+    timelineSettingsChanged(): void {
+        this.rebuildSpline();
+    }
+
     /**
      * Add a pose directly (used for deserialization and legacy import).
      */

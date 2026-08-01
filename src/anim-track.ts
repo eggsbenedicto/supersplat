@@ -47,6 +47,12 @@ interface AnimTrack {
      * and fire appropriate change events.
      */
     restore(snapshot: unknown): void;
+
+    /** Evaluate the track at an integer or fractional Global Timeline frame. */
+    evaluate(frame: number): void;
+
+    /** Rebuild any cached evaluation data after Global Timeline settings change. */
+    timelineSettingsChanged(): void;
 }
 
 export { AnimTrack };
