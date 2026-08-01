@@ -70,12 +70,30 @@ class SplatTransformTrack implements AnimTrack {
         return true;
     }
 
-    moveKey(_fromFrame: number, _toFrame: number): boolean {
-        return false;
+    moveKey(fromFrame: number, toFrame: number): boolean {
+        if (fromFrame === toFrame) return false;
+        const source = this.data.find(key => key.frame === fromFrame);
+        if (!source) return false;
+        const moved = cloneKey(source);
+        moved.frame = toFrame;
+        this.data = this.data.filter(key => key.frame !== fromFrame && key.frame !== toFrame);
+        this.data.push(moved);
+        this.data.sort((a, b) => a.frame - b.frame);
+        this.events.fire('track.keyMoved', this.targetId, fromFrame, toFrame);
+        return true;
     }
 
-    copyKey(_fromFrame: number, _toFrame: number): boolean {
-        return false;
+    copyKey(fromFrame: number, toFrame: number): boolean {
+        if (fromFrame === toFrame) return false;
+        const source = this.data.find(key => key.frame === fromFrame);
+        if (!source) return false;
+        const copied = cloneKey(source);
+        copied.frame = toFrame;
+        this.data = this.data.filter(key => key.frame !== toFrame);
+        this.data.push(copied);
+        this.data.sort((a, b) => a.frame - b.frame);
+        this.events.fire('track.keyAdded', this.targetId, toFrame);
+        return true;
     }
 
     clear(): void {
