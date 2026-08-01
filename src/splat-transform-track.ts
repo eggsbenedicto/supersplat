@@ -94,19 +94,36 @@ class SplatTransformTrack implements AnimTrack {
     }
 
     evaluate(frame: number): void {
-        if (this.data.length === 0) return;
+        const duration = this.events.invoke('timeline.frames') as number;
+        const keys = this.data.filter(key => key.frame < duration);
+        if (keys.length === 0) return;
 
         let position: Vec3;
         let rotation: Quat;
         let scale: Vec3;
 
-        if (this.data.length === 1) {
-            ({ position, rotation, scale } = this.data[0]);
+        if (keys.length === 1) {
+            ({ position, rotation, scale } = keys[0]);
         } else {
-            const rightIndex = this.data.findIndex(key => key.frame >= frame);
-            const a = rightIndex <= 0 ? this.data[0] : this.data[rightIndex - 1];
-            const b = rightIndex === -1 ? this.data[this.data.length - 1] : this.data[rightIndex];
-            const t = a === b ? 0 : Math.max(0, Math.min(1, (frame - a.frame) / (b.frame - a.frame)));
+            const rightIndex = keys.findIndex(key => key.frame >= frame);
+            const looping = this.events.invoke('timeline.loop') as boolean;
+            let a: SplatTransformKey;
+            let b: SplatTransformKey;
+            let sample = frame;
+            let endFrame: number;
+
+            if (looping && (rightIndex === 0 || rightIndex === -1)) {
+                a = keys[keys.length - 1];
+                b = keys[0];
+                if (rightIndex === 0) sample += duration;
+                endFrame = b.frame + duration;
+            } else {
+                a = rightIndex <= 0 ? keys[0] : keys[rightIndex - 1];
+                b = rightIndex === -1 ? keys[keys.length - 1] : keys[rightIndex];
+                endFrame = b.frame;
+            }
+
+            const t = a === b ? 0 : Math.max(0, Math.min(1, (sample - a.frame) / (endFrame - a.frame)));
 
             position = this.resultPosition.lerp(a.position, b.position, t);
             scale = this.resultScale.lerp(a.scale, b.scale, t);
