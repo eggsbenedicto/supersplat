@@ -180,7 +180,7 @@ class CameraAnimTrack implements AnimTrack {
                 fov: Number.isFinite(value.fov) ? value.fov : this.events.invoke('camera.fov') ?? 60
             }];
         });
-        this.loadPoses(poses);
+        this.loadPoses([...new Map(poses.map(pose => [pose.frame, pose])).values()]);
     }
 
     /**

@@ -357,6 +357,7 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
         const renderImpl = async () => {
             events.fire('progressStart', i18n.t('panel.render.render-video'), true);
             const restoreFrame = events.invoke('timeline.frame') as number;
+            const restoreTime = events.invoke('timeline.time') as number;
             events.fire('camera.setRenderEvaluation', true);
 
             let cancelled = false;
@@ -780,8 +781,8 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                 scene.gizmoLayer.enabled = true;
                 scene.camera.clearPass.setClearColor(nullClr);
                 scene.lockedRenderMode = false;
-                events.fire('timeline.time', restoreFrame);
                 events.fire('timeline.setFrame', restoreFrame);
+                events.fire('timeline.time', restoreTime);
                 scene.camera.onUpdate(0);
                 events.fire('camera.setRenderEvaluation', false);
                 scene.forceRender = true;

@@ -78,4 +78,18 @@ describe('versioned project animation data', () => {
         expect(targets[0].track.keys).toEqual([0]);
         expect(targets[1].track.keys).toEqual([3]);
     });
+
+    test('retains legacy poseSets as a Camera compatibility representation', () => {
+        const source = createRuntime();
+        source.fire('camera.addPose', {
+            name: 'legacy', frame: 6,
+            position: new Vec3(1, 2, 3), target: new Vec3(4, 5, 6), fov: 55
+        });
+        const poseSets = source.invoke('docSerialize.poseSets');
+
+        const destination = createRuntime();
+        destination.invoke('docDeserialize.poseSets', poseSets, 60);
+
+        expect(destination.invoke('docSerialize.poseSets')).toEqual(poseSets);
+    });
 });

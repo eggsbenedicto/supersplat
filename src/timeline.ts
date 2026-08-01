@@ -15,8 +15,10 @@ const registerTimelineEvents = (events: Events) => {
 
     // current frame
     let frame = 0;
+    let time = 0;
 
-    const setFrame = (value: number) => {
+    const setFrame = (value: number, setTime = true) => {
+        if (setTime) time = value;
         if (value !== frame) {
             frame = value;
             events.fire('timeline.frame', frame);
@@ -25,6 +27,11 @@ const registerTimelineEvents = (events: Events) => {
 
     events.function('timeline.frame', () => {
         return frame;
+    });
+
+    events.function('timeline.time', () => time);
+    events.on('timeline.time', (value: number) => {
+        time = value;
     });
 
     events.on('timeline.setFrame', (value: number) => {
@@ -108,13 +115,14 @@ const registerTimelineEvents = (events: Events) => {
     let animHandle: EventHandle = null;
 
     const play = () => {
-        let time = frame;
+        let playbackTime = time;
 
         // handle application update tick
         animHandle = events.on('update', (dt: number) => {
-            time = (time + dt * frameRate) % frames;
-            setFrame(Math.floor(time));
-            events.fire('timeline.time', time);
+            playbackTime = (playbackTime + dt * frameRate) % frames;
+            time = playbackTime;
+            setFrame(Math.floor(playbackTime), false);
+            events.fire('timeline.time', playbackTime);
         });
     };
 
@@ -210,6 +218,7 @@ const registerTimelineEvents = (events: Events) => {
         frames = data.frames ?? 180;
         frameRate = data.frameRate ?? 30;
         frame = data.frame ?? 0;
+        time = frame;
         smoothness = data.smoothness ?? 1;
         loop = data.loop ?? true;
 

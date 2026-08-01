@@ -124,7 +124,7 @@ class SplatTransformTrack implements AnimTrack {
     deserialize(data: unknown): void {
         const validVector = (value: unknown, length: number) => Array.isArray(value) &&
             value.length === length && value.every(component => typeof component === 'number' && Number.isFinite(component));
-        this.data = (Array.isArray(data) ? data : []).flatMap((value: any) => {
+        const loaded = (Array.isArray(data) ? data : []).flatMap((value: any) => {
             if (!Number.isFinite(value?.frame) ||
                 !validVector(value.position, 3) ||
                 !validVector(value.rotation, 4) ||
@@ -137,7 +137,8 @@ class SplatTransformTrack implements AnimTrack {
                 rotation: new Quat(value.rotation).normalize(),
                 scale: new Vec3(value.scale)
             }];
-        }).sort((a, b) => a.frame - b.frame);
+        });
+        this.data = [...new Map(loaded.map(key => [key.frame, key])).values()].sort((a, b) => a.frame - b.frame);
         this.events.fire('track.keysLoaded', this.targetId);
     }
 
@@ -188,7 +189,9 @@ class SplatTransformTrack implements AnimTrack {
         this.target.move(position, rotation, scale);
     }
 
-    timelineSettingsChanged(): void {}
+    timelineSettingsChanged(): void {
+        this.evaluate(this.events.invoke('timeline.frame'));
+    }
 }
 
 export { SplatTransformKey, SplatTransformTrack };
