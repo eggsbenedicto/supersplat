@@ -301,6 +301,7 @@
     "status-bar.locked": "Bloqueados",
     "status-bar.deleted": "Eliminados",
     "status-bar.timeline": "Línea de tiempo",
+    "timeline.targets": "Timeline Targets",
     "status-bar.splat-data": "Datos de Splat",
 
     "tooltip.right-toolbar.splat-mode": "Modo Splat",
@@ -341,6 +342,7 @@
     "tooltip.timeline.total-frames": "Fotogramas totales",
     "tooltip.timeline.smoothness": "Suavidad",
     "tooltip.timeline.loop": "Animación en bucle",
+    "tooltip.timeline.camera-preview": "Pin Render Camera Preview (navigation locked)",
 
     "tooltip.scene.solo": "Solo seleccionado",
     "tooltip.scene.import": "Importar escena",

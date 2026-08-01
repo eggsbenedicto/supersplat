@@ -109,6 +109,7 @@ class SplatTransformTrack implements AnimTrack {
     restore(snapshot: unknown): void {
         this.data = (snapshot as SplatTransformKey[]).map(cloneKey);
         this.events.fire('track.keysLoaded', this.targetId);
+        this.evaluate(this.events.invoke('timeline.frame'));
     }
 
     serialize() {

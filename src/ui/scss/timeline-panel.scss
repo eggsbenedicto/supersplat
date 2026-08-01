@@ -73,7 +73,7 @@
                     width: 60px;
                 }
 
-                > #loop {
+                > #loop, > #camera-preview {
                     font-family: pc-icon;
                     font-weight: bold;
                     font-size: 13px;
@@ -186,6 +186,111 @@
 
                 &.copying {
                     cursor: copy;
+                }
+            }
+        }
+    }
+
+    > #timeline-stack {
+        min-height: 76px;
+        max-height: 190px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background-color: $bcg-darkest;
+
+        > .timeline-stack-body {
+            position: relative;
+            min-width: 100%;
+
+            .timeline-ruler,
+            .timeline-target-row {
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                min-height: 26px;
+            }
+
+            .timeline-ruler {
+                position: sticky;
+                top: 0;
+                z-index: 4;
+                background-color: $bcg-primary;
+            }
+
+            .timeline-target-row {
+                border-top: 1px solid $bcg-primary;
+
+                &.active {
+                    background-color: rgba($clr-hilight, 0.13);
+
+                    > .timeline-target-label {
+                        color: $clr-active;
+                        border-left-color: $clr-hilight;
+                    }
+                }
+
+                &.hidden-target {
+                    opacity: 0.48;
+                }
+            }
+
+            .timeline-target-label {
+                overflow: hidden;
+                padding: 4px 8px;
+                border: 0;
+                border-left: 3px solid transparent;
+                background: transparent;
+                color: $clr-default;
+                font: inherit;
+                text-align: left;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            button.timeline-target-label {
+                cursor: pointer;
+
+                &:hover {
+                    color: $clr-active;
+                }
+            }
+
+            .timeline-row-area {
+                position: relative;
+                min-width: 0;
+            }
+
+            .timeline-ruler-label {
+                position: absolute;
+                bottom: 4px;
+                transform: translateX(-50%);
+                color: $clr-default;
+                font-size: 11px;
+                pointer-events: none;
+            }
+
+            .timeline-playhead {
+                position: absolute;
+                z-index: 3;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                background-color: $clr-hilight;
+                pointer-events: none;
+            }
+
+            .timeline-key {
+                position: absolute;
+                top: 9px;
+                width: 9px;
+                height: 9px;
+                transform: translateX(-50%);
+                clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+                background-color: $clr-icon-hilight;
+                cursor: ew-resize;
+
+                &.out-of-range {
+                    background-color: $error;
+                    opacity: 0.7;
                 }
             }
         }

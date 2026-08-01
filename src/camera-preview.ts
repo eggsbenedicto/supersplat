@@ -52,7 +52,10 @@ const registerCameraPreviewEvents = (events: Events, setNavigationEnabled: (enab
     });
     events.on('camera.timelineCleared', () => {
         renderPose = null;
-        if (pinned) setPinned(false);
+        if (pinned) {
+            editPose = currentPose();
+            setPinned(false);
+        }
     });
     events.on('camera.previewReset', () => {
         if (pinned) setPinned(false);

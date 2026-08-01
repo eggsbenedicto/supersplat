@@ -69,7 +69,8 @@ class CameraPoseGizmos extends Element {
         scene.app.root.addChild(this.entity);
 
         // mark dirty when poses or scene bound change
-        const markDirty = () => {
+        const markDirty = (targetId?: string) => {
+            if (targetId && targetId !== 'camera') return;
             this.dirty = true;
             if (scene.events.invoke('camera.showPoses')) {
                 scene.forceRender = true;

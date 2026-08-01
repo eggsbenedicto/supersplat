@@ -6,16 +6,16 @@ import { Splat } from './splat';
 const registerSelectionEvents = (events: Events, scene: Scene) => {
     let selection: Splat = null;
 
-    const setSelection = (splat: Splat) => {
-        if (splat !== selection && (!splat || splat.visible)) {
+    const setSelection = (splat: Splat, source = 'user') => {
+        if (splat !== selection) {
             const prev = selection;
             selection = splat;
-            events.fire('selection.changed', selection, prev);
+            events.fire('selection.changed', selection, prev, source);
         }
     };
 
-    events.on('selection', (splat: Splat) => {
-        setSelection(splat);
+    events.on('selection', (splat: Splat, source = 'user') => {
+        setSelection(splat, source);
     });
 
     events.function('selection', () => {
@@ -26,31 +26,25 @@ const registerSelectionEvents = (events: Events, scene: Scene) => {
         const splats = scene.getElementsByType(ElementType.splat) as Splat[];
         if (splats.length > 1) {
             const idx = splats.indexOf(selection);
-            setSelection(splats[(idx + 1) % splats.length]);
+            setSelection(splats[(idx + 1) % splats.length], 'user');
         }
     });
 
     events.on('scene.elementAdded', (element: Element) => {
         if (element.type === ElementType.splat) {
-            setSelection(element as Splat);
+            setSelection(element as Splat, 'automatic');
         }
     });
 
     events.on('scene.elementRemoved', (element: Element) => {
         if (element === selection) {
             const splats = scene.getElementsByType(ElementType.splat) as Splat[];
-            setSelection(splats.length === 1 ? null : splats.find(v => v !== element));
-        }
-    });
-
-    events.on('splat.visibility', (splat: Splat) => {
-        if (splat === selection && !splat.visible) {
-            setSelection(null);
+            setSelection(splats.length === 1 ? null : splats.find(v => v !== element), 'automatic');
         }
     });
 
     events.on('camera.focalPointPicked', (details: { splat: Splat }) => {
-        setSelection(details.splat);
+        setSelection(details.splat, 'user');
     });
 };
 

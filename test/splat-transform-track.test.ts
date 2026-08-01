@@ -28,6 +28,7 @@ const createTrack = (settings: { frames?: number; loop?: boolean } = {}) => {
     const events = new Events();
     events.function('timeline.frames', () => settings.frames ?? 20);
     events.function('timeline.loop', () => settings.loop ?? false);
+    events.function('timeline.frame', () => 0);
     const target = new TransformTarget();
     const track = new SplatTransformTrack('splat:1', target, events);
     return { target, track };
@@ -104,5 +105,52 @@ describe('SplatTransformTrack', () => {
 
         track.evaluate(0);
         expect(target.position.x).toBe(8);
+    });
+
+    test('non-looping evaluation holds the outer in-range states and excludes out-of-range keys', () => {
+        const { target, track } = createTrack({ frames: 20 });
+        target.position.x = 4;
+        track.addKey(4);
+        target.position.x = 12;
+        track.addKey(12);
+        target.position.x = 99;
+        track.addKey(20);
+
+        track.evaluate(0);
+        expect(target.position.x).toBe(4);
+        track.evaluate(19.5);
+        expect(target.position.x).toBe(12);
+        expect(track.keys).toEqual([4, 12, 20]);
+    });
+
+    test('snapshots and restores are deep copies and evaluation skips redundant move events', () => {
+        const { target, track } = createTrack();
+        target.position.x = 6;
+        track.addKey(2);
+        const snapshot = track.snapshot() as any[];
+        snapshot[0].position.x = 8;
+
+        track.evaluate(2);
+        expect(target.moves).toBe(0);
+        expect(target.position.x).toBe(6);
+
+        track.restore(snapshot);
+        snapshot[0].position.x = 10;
+        expect(target.position.x).toBe(8);
+        track.evaluate(2);
+        expect(target.moves).toBe(1);
+    });
+
+    test('removing the final key retains the displayed transform as static state', () => {
+        const { target, track } = createTrack();
+        target.position.x = 5;
+        track.addKey(3);
+        target.position.x = 7;
+
+        expect(track.removeKey(3)).toBe(true);
+        track.evaluate(10);
+
+        expect(target.position.x).toBe(7);
+        expect(target.moves).toBe(0);
     });
 });

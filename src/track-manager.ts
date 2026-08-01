@@ -148,6 +148,7 @@ const registerTrackManagerEvents = (events: Events) => {
         if (!track) return;
         const before = track.snapshot();
         if (!edit(track)) return;
+        track.evaluate(events.invoke('timeline.frame'));
         const after = track.snapshot();
         events.fire('edit.add', new AnimTrackEditOp(name, track, before, after), true);
     };

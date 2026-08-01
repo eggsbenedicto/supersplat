@@ -69,6 +69,15 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         }
     });
 
+    // Timeline evaluation writes the splat once, then updates presentation
+    // state through the ordinary moved event without creating edit history.
+    events.on('splat.moved', (splat: Splat) => {
+        if (events.invoke('selection') !== splat) return;
+        const transform = new Transform();
+        splat.getPivot(transform);
+        events.invoke('pivot').place(transform);
+    });
+
     events.function('scene.dirty', () => {
         return editHistory.cursor !== lastExportCursor;
     });

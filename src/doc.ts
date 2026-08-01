@@ -126,10 +126,16 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 console.error('this should never fire');
             }
 
-            events.invoke('docDeserialize.timeline', document.timeline);
-            events.invoke('docDeserialize.poseSets', document.poseSets, document.camera?.fov);
-            events.invoke('docDeserialize.view', document.view);
+            // Apply the static Camera before loading animation so the registered
+            // Camera target can evaluate over the correct document defaults.
             scene.camera.docDeserialize(document.camera);
+            events.invoke('docDeserialize.timeline', document.timeline);
+            const loadedVersionedCamera = events.invoke('docDeserialize.animations', document.animations);
+            if (!loadedVersionedCamera) {
+                events.invoke('docDeserialize.poseSets', document.poseSets, document.camera?.fov);
+            }
+            events.invoke('docDeserialize.view', document.view);
+            events.fire('camera.previewReset');
 
             // refresh the pivot to reflect the loaded transform
             const currentSelection = events.invoke('selection');
@@ -167,6 +173,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 camera: scene.camera.docSerialize(),
                 view: events.invoke('docSerialize.view'),
                 poseSets: events.invoke('docSerialize.poseSets'),
+                animations: events.invoke('docSerialize.animations'),
                 timeline: events.invoke('docSerialize.timeline'),
                 splats: splats.map(s => s.docSerialize())
             };

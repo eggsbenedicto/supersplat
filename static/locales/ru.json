@@ -301,6 +301,7 @@
     "status-bar.locked": "Заблокировано",
     "status-bar.deleted": "Удалено",
     "status-bar.timeline": "Временная шкала",
+    "timeline.targets": "Timeline Targets",
     "status-bar.splat-data": "Данные сплатов",
 
     "tooltip.right-toolbar.splat-mode": "Режим Splat",
@@ -341,6 +342,7 @@
     "tooltip.timeline.total-frames": "Всего кадров",
     "tooltip.timeline.smoothness": "Плавность",
     "tooltip.timeline.loop": "Зациклить анимацию",
+    "tooltip.timeline.camera-preview": "Pin Render Camera Preview (navigation locked)",
 
     "tooltip.scene.solo": "Соло выбранного",
     "tooltip.scene.import": "Импортировать сцену",

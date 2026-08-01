@@ -301,6 +301,7 @@
     "status-bar.locked": "已锁定",
     "status-bar.deleted": "已删除",
     "status-bar.timeline": "时间线",
+    "timeline.targets": "Timeline Targets",
     "status-bar.splat-data": "高斯点数据",
 
     "tooltip.right-toolbar.splat-mode": "Splat 模式",
@@ -341,6 +342,7 @@
     "tooltip.timeline.total-frames": "总帧数",
     "tooltip.timeline.smoothness": "平滑度",
     "tooltip.timeline.loop": "循环动画",
+    "tooltip.timeline.camera-preview": "Pin Render Camera Preview (navigation locked)",
 
     "tooltip.scene.solo": "独显所选",
     "tooltip.scene.import": "导入场景",

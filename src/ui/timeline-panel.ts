@@ -2,6 +2,7 @@ import { Button, Container, Element, NumericInput, SelectInput } from '@playcanv
 
 import { Events } from '../events';
 import { ShortcutManager } from '../shortcut-manager';
+import { TimelineTarget } from '../track-manager';
 import { i18n } from './localization';
 import { Tooltips } from './tooltips';
 
@@ -308,6 +309,154 @@ class Ticks extends Container {
     }
 }
 
+/** Multi-row timeline sharing one ruler and playhead across every target. */
+class TimelineStack extends Container {
+    constructor(events: Events, tooltips: Tooltips, args = {}) {
+        super({ ...args, id: 'timeline-stack' });
+
+        const body = document.createElement('div');
+        body.className = 'timeline-stack-body';
+        this.dom.appendChild(body);
+
+        const wrappers: Element[] = [];
+        let moveCursor = (_frame: number) => {};
+
+        const rebuild = () => {
+            wrappers.splice(0).forEach(wrapper => wrapper.destroy());
+            body.innerHTML = '';
+
+            const frames = events.invoke('timeline.frames') as number;
+            const targets = events.invoke('track.targets') as TimelineTarget[] ?? [];
+            const active = events.invoke('track.activeTarget') as TimelineTarget;
+            const labelWidth = 120;
+            const padding = 20;
+            const width = Math.max(1, this.dom.getBoundingClientRect().width - labelWidth - padding * 2);
+            const offsetFromFrame = (frame: number) => padding + Math.floor(frame / Math.max(1, frames - 1) * width);
+            const frameFromX = (clientX: number, area: HTMLElement) => {
+                const x = clientX - area.getBoundingClientRect().left;
+                return Math.max(0, Math.min(frames - 1, Math.floor((x - padding) / width * Math.max(1, frames - 1))));
+            };
+
+            const ruler = document.createElement('div');
+            ruler.className = 'timeline-ruler';
+            const rulerLabel = document.createElement('div');
+            rulerLabel.className = 'timeline-target-label';
+            rulerLabel.textContent = i18n.t('timeline.targets');
+            const rulerArea = document.createElement('div');
+            rulerArea.className = 'timeline-row-area';
+            ruler.append(rulerLabel, rulerArea);
+            body.appendChild(ruler);
+
+            const minStep = Math.max(1, frames / Math.max(1, Math.floor(width / 50)));
+            const magnitude = 10 ** Math.floor(Math.log10(minStep));
+            const step = [1, 2, 5, 10].map(value => value * magnitude).find(value => value >= minStep) ?? 10 * magnitude;
+            for (let frame = 0; frame < frames; frame += step) {
+                const label = document.createElement('div');
+                label.className = 'timeline-ruler-label';
+                label.style.left = `${offsetFromFrame(frame)}px`;
+                label.textContent = `${frame}`;
+                rulerArea.appendChild(label);
+            }
+
+            let scrubbing = false;
+            rulerArea.addEventListener('pointerdown', (event: PointerEvent) => {
+                if (!event.isPrimary) return;
+                scrubbing = true;
+                rulerArea.setPointerCapture(event.pointerId);
+                events.fire('timeline.setFrame', frameFromX(event.clientX, rulerArea));
+            });
+            rulerArea.addEventListener('pointermove', (event: PointerEvent) => {
+                if (scrubbing) events.fire('timeline.setFrame', frameFromX(event.clientX, rulerArea));
+            });
+            rulerArea.addEventListener('pointerup', (event: PointerEvent) => {
+                if (!scrubbing || !event.isPrimary) return;
+                scrubbing = false;
+                rulerArea.releasePointerCapture(event.pointerId);
+            });
+
+            const cursor = document.createElement('div');
+            cursor.className = 'timeline-playhead';
+            body.appendChild(cursor);
+            moveCursor = (frame: number) => {
+                cursor.style.left = `${labelWidth + offsetFromFrame(frame)}px`;
+            };
+
+            targets.forEach((target) => {
+                const row = document.createElement('div');
+                row.className = 'timeline-target-row';
+                if (target === active) row.classList.add('active');
+                if (target.kind === 'splat' && !(target.element as any)?.visible) row.classList.add('hidden-target');
+                row.dataset.targetId = target.id;
+
+                const label = document.createElement('button');
+                label.type = 'button';
+                label.className = 'timeline-target-label';
+                label.textContent = target.label;
+                label.addEventListener('click', () => events.fire('track.setActive', target.id));
+
+                const area = document.createElement('div');
+                area.className = 'timeline-row-area';
+                area.addEventListener('pointerdown', () => events.fire('track.setActive', target.id));
+                row.append(label, area);
+                body.appendChild(row);
+
+                const outOfRange = target.track.keys.filter(frame => frame >= frames).sort((a, b) => a - b);
+                target.track.keys.forEach((keyFrame) => {
+                    const key = document.createElement('div');
+                    key.className = 'timeline-key';
+                    const pinnedIndex = outOfRange.indexOf(keyFrame);
+                    if (pinnedIndex !== -1) key.classList.add('out-of-range');
+                    key.style.left = `${pinnedIndex === -1 ? offsetFromFrame(keyFrame) : padding + width + 10 + Math.min(3, pinnedIndex) * 2}px`;
+                    key.dataset.frame = `${keyFrame}`;
+
+                    const wrapper = new Element({ dom: key });
+                    tooltips.register(wrapper, () => pinnedIndex === -1 ?
+                        i18n.t('tooltip.timeline.key') :
+                        i18n.t('tooltip.timeline.key-out-of-range', { frame: keyFrame }), 'top');
+                    wrappers.push(wrapper);
+
+                    let dragging = false;
+                    let toFrame = keyFrame;
+                    key.addEventListener('pointerdown', (event: PointerEvent) => {
+                        if (!event.isPrimary) return;
+                        events.fire('track.setActive', target.id);
+                        dragging = true;
+                        key.setPointerCapture(event.pointerId);
+                        event.stopPropagation();
+                    });
+                    key.addEventListener('pointermove', (event: PointerEvent) => {
+                        if (!dragging) return;
+                        toFrame = frameFromX(event.clientX, area);
+                        key.style.left = `${offsetFromFrame(toFrame)}px`;
+                    });
+                    key.addEventListener('pointerup', (event: PointerEvent) => {
+                        if (!dragging || !event.isPrimary) return;
+                        dragging = false;
+                        key.releasePointerCapture(event.pointerId);
+                        if (event.ctrlKey && toFrame === keyFrame) {
+                            events.fire('track.addKey', keyFrame);
+                        } else if (toFrame !== keyFrame) {
+                            events.fire(event.shiftKey ? 'track.copyKey' : 'track.moveKey', keyFrame, toFrame);
+                        }
+                    });
+                    area.appendChild(key);
+                });
+            });
+
+            moveCursor(events.invoke('timeline.frame'));
+        };
+
+        new ResizeObserver(rebuild).observe(this.dom);
+        events.on('timeline.frame', (frame: number) => moveCursor(frame));
+        ['timeline.frames', 'track.targetsChanged', 'track.activeChanged', 'track.keyAdded',
+            'track.keyRemoved', 'track.keyMoved', 'track.keyUpdated', 'track.keysLoaded',
+            'track.keysCleared'].forEach(event => events.on(event, rebuild));
+
+        this.on('destroy', () => wrappers.splice(0).forEach(wrapper => wrapper.destroy()));
+        rebuild();
+    }
+}
+
 class TimelinePanel extends Container {
     constructor(events: Events, tooltips: Tooltips, args = {}) {
         args = {
@@ -413,6 +562,13 @@ class TimelinePanel extends Container {
             smoothness.value = smoothnessIn;
         });
 
+        const updateSmoothnessState = () => {
+            const target = events.invoke('track.activeTarget') as TimelineTarget;
+            smoothness.enabled = target?.kind === 'camera';
+        };
+        events.on('track.activeChanged', updateSmoothnessState);
+        updateSmoothnessState();
+
         // loop
 
         const loop = new Button({
@@ -432,6 +588,20 @@ class TimelinePanel extends Container {
             loop.class.add('active');
         }
 
+        const cameraPreview = new Button({
+            id: 'camera-preview',
+            text: '\u{1F4CC}'
+        });
+        cameraPreview.on('click', () => {
+            events.fire('camera.setPreviewPinned', !cameraPreview.class.contains('active'));
+        });
+        events.on('camera.previewPinned', (pinned: boolean) => {
+            cameraPreview.class[pinned ? 'add' : 'remove']('active');
+            cameraPreview.text = pinned ? '\u{1F4CD}' : '\u{1F4CC}';
+            const active = events.invoke('track.activeTarget') as TimelineTarget;
+            addKey.enabled = !(pinned && active?.kind === 'camera');
+        });
+
         const settingsControls = new Container({
             id: 'settings-controls'
         });
@@ -439,6 +609,7 @@ class TimelinePanel extends Container {
         settingsControls.append(frames);
         settingsControls.append(smoothness);
         settingsControls.append(loop);
+        settingsControls.append(cameraPreview);
 
         // append control groups
 
@@ -459,7 +630,7 @@ class TimelinePanel extends Container {
         controlsWrap.append(buttonControls);
         controlsWrap.append(spacerR);
 
-        const ticks = new Ticks(events, tooltips);
+        const ticks = new TimelineStack(events, tooltips);
 
         this.append(controlsWrap);
         this.append(ticks);
@@ -575,7 +746,8 @@ class TimelinePanel extends Container {
         tooltips.register(frames, () => i18n.t('tooltip.timeline.total-frames'), 'top');
         tooltips.register(smoothness, () => i18n.t('tooltip.timeline.smoothness'), 'top');
         tooltips.register(loop, () => i18n.t('tooltip.timeline.loop'), 'top');
+        tooltips.register(cameraPreview, () => i18n.t('tooltip.timeline.camera-preview'), 'top');
     }
 }
 
-export { TimelinePanel };
+export { TimelinePanel, TimelineStack };

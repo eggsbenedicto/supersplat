@@ -38,6 +38,9 @@ class CameraAnimTrack implements AnimTrack {
     }
 
     addKey(frame: number): boolean {
+        if (this.events.functions.has('camera.previewPinned') && this.events.invoke('camera.previewPinned')) {
+            return false;
+        }
         const pose = this.events.invoke('camera.getPose');
         if (!pose) return false;
 

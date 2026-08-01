@@ -301,6 +301,7 @@
     "status-bar.locked": "ロック済み",
     "status-bar.deleted": "削除済み",
     "status-bar.timeline": "タイムライン",
+    "timeline.targets": "Timeline Targets",
     "status-bar.splat-data": "スプラットデータ",
 
     "tooltip.right-toolbar.splat-mode": "スプラットモード",
@@ -341,6 +342,7 @@
     "tooltip.timeline.total-frames": "総フレーム数",
     "tooltip.timeline.smoothness": "スムーズさ",
     "tooltip.timeline.loop": "アニメーションをループ",
+    "tooltip.timeline.camera-preview": "Pin Render Camera Preview (navigation locked)",
 
     "tooltip.scene.solo": "選択をソロ表示",
     "tooltip.scene.import": "シーンをインポート",
