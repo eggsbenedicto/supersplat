@@ -391,7 +391,7 @@ class TimelineStack extends Container {
                 const label = document.createElement('button');
                 label.type = 'button';
                 label.className = 'timeline-target-label';
-                label.textContent = target.label;
+                label.textContent = target.kind === 'camera' ? i18n.t('timeline.camera') : target.label;
                 label.addEventListener('click', () => events.fire('track.setActive', target.id));
 
                 const area = document.createElement('div');
@@ -565,6 +565,8 @@ class TimelinePanel extends Container {
         const updateSmoothnessState = () => {
             const target = events.invoke('track.activeTarget') as TimelineTarget;
             smoothness.enabled = target?.kind === 'camera';
+            const pinned = events.functions.has('camera.previewPinned') && events.invoke('camera.previewPinned');
+            addKey.enabled = !(pinned && target?.kind === 'camera');
         };
         events.on('track.activeChanged', updateSmoothnessState);
         updateSmoothnessState();
@@ -598,8 +600,7 @@ class TimelinePanel extends Container {
         events.on('camera.previewPinned', (pinned: boolean) => {
             cameraPreview.class[pinned ? 'add' : 'remove']('active');
             cameraPreview.text = pinned ? '\u{1F4CD}' : '\u{1F4CC}';
-            const active = events.invoke('track.activeTarget') as TimelineTarget;
-            addKey.enabled = !(pinned && active?.kind === 'camera');
+            updateSmoothnessState();
         });
 
         const settingsControls = new Container({

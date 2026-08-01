@@ -302,6 +302,7 @@
     "status-bar.deleted": "삭제됨",
     "status-bar.timeline": "타임라인",
     "timeline.targets": "Timeline Targets",
+    "timeline.camera": "Camera",
     "status-bar.splat-data": "스플랫 데이터",
 
     "tooltip.right-toolbar.splat-mode": "Splat 모드",

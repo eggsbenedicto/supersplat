@@ -302,6 +302,7 @@
     "status-bar.deleted": "已删除",
     "status-bar.timeline": "时间线",
     "timeline.targets": "Timeline Targets",
+    "timeline.camera": "Camera",
     "status-bar.splat-data": "高斯点数据",
 
     "tooltip.right-toolbar.splat-mode": "Splat 模式",

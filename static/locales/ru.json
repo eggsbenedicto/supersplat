@@ -302,6 +302,7 @@
     "status-bar.deleted": "Удалено",
     "status-bar.timeline": "Временная шкала",
     "timeline.targets": "Timeline Targets",
+    "timeline.camera": "Camera",
     "status-bar.splat-data": "Данные сплатов",
 
     "tooltip.right-toolbar.splat-mode": "Режим Splat",

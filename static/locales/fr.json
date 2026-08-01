@@ -302,6 +302,7 @@
     "status-bar.deleted": "Supprimés",
     "status-bar.timeline": "Chronologie",
     "timeline.targets": "Timeline Targets",
+    "timeline.camera": "Camera",
     "status-bar.splat-data": "Données Splat",
 
     "tooltip.right-toolbar.splat-mode": "Mode splat",

@@ -302,6 +302,7 @@
     "status-bar.deleted": "削除済み",
     "status-bar.timeline": "タイムライン",
     "timeline.targets": "Timeline Targets",
+    "timeline.camera": "Camera",
     "status-bar.splat-data": "スプラットデータ",
 
     "tooltip.right-toolbar.splat-mode": "スプラットモード",
