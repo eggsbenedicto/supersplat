@@ -24,10 +24,10 @@ class TransformTarget {
     }
 }
 
-const createTrack = () => {
+const createTrack = (settings: { frames?: number; loop?: boolean } = {}) => {
     const events = new Events();
-    events.function('timeline.frames', () => 20);
-    events.function('timeline.loop', () => false);
+    events.function('timeline.frames', () => settings.frames ?? 20);
+    events.function('timeline.loop', () => settings.loop ?? false);
     const target = new TransformTarget();
     const track = new SplatTransformTrack('splat:1', target, events);
     return { target, track };
@@ -74,5 +74,18 @@ describe('SplatTransformTrack', () => {
         expect(target.rotation.length()).toBeCloseTo(1, 8);
         const forward = target.rotation.transformVector(Vec3.FORWARD);
         expect(forward.z).toBeGreaterThan(0.98);
+    });
+
+    test('looping evaluation interpolates continuously from the last in-range state to the first across the timeline boundary', () => {
+        const { target, track } = createTrack({ frames: 20, loop: true });
+        target.position.x = 4;
+        track.addKey(4);
+        target.position.x = 12;
+        track.addKey(12);
+
+        track.evaluate(18);
+
+        // Segment length is (20 - 12) + 4 = 12 frames; frame 18 is halfway.
+        expect(target.position.x).toBe(8);
     });
 });
