@@ -508,8 +508,9 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
                     const pos = scene.camera.position;
                     const forward = scene.camera.forward;
                     const cameraMoved = !last_pos.equals(pos) || !last_forward.equals(forward);
-                    const changed = cameraMoved ? visible : visible.filter(splat =>
-                        splat === newSplat || revisions.get(splat) !== splat.transformRevision);
+                    const changed = cameraMoved ? visible : visible.filter(splat => (
+                        splat === newSplat || revisions.get(splat) !== splat.transformRevision
+                    ));
                     if (changed.length > 0) {
                         last_pos.copy(pos);
                         last_forward.copy(forward);

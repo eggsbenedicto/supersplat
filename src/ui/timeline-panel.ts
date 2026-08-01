@@ -410,9 +410,9 @@ class TimelineStack extends Container {
                     key.dataset.frame = `${keyFrame}`;
 
                     const wrapper = new Element({ dom: key });
-                    tooltips.register(wrapper, () => pinnedIndex === -1 ?
+                    tooltips.register(wrapper, () => (pinnedIndex === -1 ?
                         i18n.t('tooltip.timeline.key') :
-                        i18n.t('tooltip.timeline.key-out-of-range', { frame: keyFrame }), 'top');
+                        i18n.t('tooltip.timeline.key-out-of-range', { frame: keyFrame })), 'top');
                     wrappers.push(wrapper);
 
                     let dragging = false;

@@ -36,6 +36,9 @@ const registerTrackManagerEvents = (events: Events) => {
     };
 
     const findTarget = (id: string) => targets.find(target => target.id === id);
+    const evaluateAll = (frame: number) => {
+        targets.forEach(target => target.track.evaluate(frame));
+    };
 
     events.function('track.targets', () => targets);
     events.function('track.activeTarget', () => activeTarget);
@@ -130,9 +133,6 @@ const registerTrackManagerEvents = (events: Events) => {
         if (target) setActiveTarget(target, false);
     });
 
-    const evaluateAll = (frame: number) => {
-        targets.forEach(target => target.track.evaluate(frame));
-    };
     events.on('timeline.frame', evaluateAll);
     events.on('timeline.time', evaluateAll);
 

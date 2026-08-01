@@ -43,7 +43,7 @@ const registerCameraPreviewEvents = (events: Events, setNavigationEnabled: (enab
 
     events.function('camera.previewPinned', () => pinned);
     events.function('camera.renderEvaluation', () => rendering);
-    events.function('camera.renderPose', () => renderPose ? clonePose(renderPose) : null);
+    events.function('camera.renderPose', () => (renderPose ? clonePose(renderPose) : null));
 
     events.on('camera.setPreviewPinned', setPinned);
     events.on('camera.timelinePose', (pose: CameraPose) => {

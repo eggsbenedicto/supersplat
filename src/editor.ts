@@ -11,6 +11,7 @@ import { MappedReadFileSystem } from './io';
 import { Scene } from './scene';
 import { Splat } from './splat';
 import { writeSplatFile } from './splat-serialize';
+import { Transform } from './transform';
 
 const removeExtension = (filename: string) => {
     return filename.substring(0, filename.length - path.getExtension(filename).length);
